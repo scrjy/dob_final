@@ -20,16 +20,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { FaTrash, FaEdit } from 'react-icons/fa'
 import { IconButton } from '@chakra-ui/react'
-import {
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc,
-  query as firebaseQuery,
-  orderBy,
-} from 'firebase/firestore'
 
 export default function MovieDetail({ query }) {
   const router = useRouter()
@@ -168,21 +158,6 @@ export default function MovieDetail({ query }) {
     )
     setEditingReviewId(null)
     setEditReviewText('')
-  }
-
-  const fetchReviews = async () => {
-    try {
-      const reviewsRef = collection(db, 'movies', query.movieId, 'reviews')
-      const q = firebaseQuery(reviewsRef, orderBy('createdAt', 'desc'))
-      const querySnapshot = await getDocs(q)
-      const reviewsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      setReviews(reviewsData)
-    } catch (error) {
-      console.error('Error fetching reviews:', error)
-    }
   }
 
   if (!isAuthenticated) {
