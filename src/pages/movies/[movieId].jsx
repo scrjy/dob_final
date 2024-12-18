@@ -20,6 +20,15 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { FaTrash, FaEdit } from 'react-icons/fa'
 import { IconButton } from '@chakra-ui/react'
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query as firebaseQuery,
+  orderBy,
+  where,
+} from 'firebase/firestore'
+import { db } from '../../firebase/config'
 
 export default function MovieDetail({ query }) {
   const router = useRouter()
@@ -36,6 +45,29 @@ export default function MovieDetail({ query }) {
   const [editingReviewId, setEditingReviewId] = useState(null)
   const [editReviewText, setEditReviewText] = useState('')
 
+  const fetchReviews = async () => {
+    try {
+      console.log('Fetching reviews for movie:', query.movieId)
+      const reviewsRef = collection(db, 'reviews')
+      const q = firebaseQuery(
+        reviewsRef,
+        where('movieId', '==', query.movieId),
+        orderBy('createdAt', 'desc')
+      )
+
+      const querySnapshot = await getDocs(q)
+      const reviewsData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+
+      console.log('Fetched reviews:', reviewsData)
+      setReviews(reviewsData)
+    } catch (error) {
+      console.error('Error fetching reviews:', error)
+    }
+  }
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const authStatus = localStorage.getItem('isLoggedIn')
@@ -46,10 +78,9 @@ export default function MovieDetail({ query }) {
         return
       }
 
-      const savedReviews =
-        JSON.parse(localStorage.getItem(`reviews-${query.movieId}`)) || []
-      setReviews(savedReviews)
+      console.log('Component mounted, fetching data...')
       fetchMovie()
+      fetchReviews()
     }
   }, [query.movieId, router])
 
@@ -113,22 +144,26 @@ export default function MovieDetail({ query }) {
     setUserReview(e.target.value)
   }
 
-  const handleSubmitReview = () => {
+  const handleSubmitReview = async () => {
     if (userReview.trim()) {
-      const newReview = {
-        id: Date.now().toString(),
-        review: userReview,
-        userId: currentUser?.uid,
-        createdAt: new Date().toISOString(),
-      }
+      try {
+        const reviewsRef = collection(db, 'reviews')
+        const newReview = {
+          movieId: query.movieId,
+          review: userReview,
+          userId: currentUser?.uid,
+          userName: currentUser?.displayName || '익명',
+          createdAt: new Date().toISOString(),
+        }
 
-      const updatedReviews = [...reviews, newReview]
-      setReviews(updatedReviews)
-      localStorage.setItem(
-        `reviews-${query.movieId}`,
-        JSON.stringify(updatedReviews)
-      )
-      setUserReview('')
+        await addDoc(reviewsRef, newReview)
+        console.log('Review added successfully')
+
+        setUserReview('')
+        fetchReviews()
+      } catch (error) {
+        console.error('Error adding review:', error)
+      }
     }
   }
 
