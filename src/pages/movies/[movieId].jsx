@@ -368,65 +368,67 @@ export default function MovieDetail({ query }) {
                 <Heading size="md" mb={4}>
                   Reviews
                 </Heading>
-                {reviews.map((review) => (
-                  <Flex
-                    key={review.id}
-                    p={4}
-                    bg="gray.50"
-                    borderRadius="md"
-                    boxShadow="sm"
-                    mb={4}
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Box flex="1">
-                      {editingReviewId === review.id ? (
-                        <Textarea
-                          value={editReviewText}
-                          onChange={(e) => setEditReviewText(e.target.value)}
-                          mb={2}
-                        />
-                      ) : (
-                        <Text>{review.review}</Text>
-                      )}
-                      <Text fontSize="sm" color="gray.500">
-                        {new Date(review.createdAt).toLocaleDateString()}
-                      </Text>
-                    </Box>
-                    {currentUser?.uid === review.userId && (
-                      <Flex>
+                <Box maxHeight="300px" overflowY="auto">
+                  {reviews.map((review) => (
+                    <Flex
+                      key={review.id}
+                      p={4}
+                      bg="gray.50"
+                      borderRadius="md"
+                      boxShadow="sm"
+                      mb={4}
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Box flex="1">
                         {editingReviewId === review.id ? (
-                          <Button
-                            colorScheme="green"
-                            size="sm"
-                            onClick={() => handleSaveEdit(review.id)}
-                            mr={2}
-                          >
-                            저장
-                          </Button>
+                          <Textarea
+                            value={editReviewText}
+                            onChange={(e) => setEditReviewText(e.target.value)}
+                            mb={2}
+                          />
                         ) : (
+                          <Text>{review.review}</Text>
+                        )}
+                        <Text fontSize="sm" color="gray.500">
+                          {new Date(review.createdAt).toLocaleDateString()}
+                        </Text>
+                      </Box>
+                      {currentUser?.uid === review.userId && (
+                        <Flex>
+                          {editingReviewId === review.id ? (
+                            <Button
+                              colorScheme="green"
+                              size="sm"
+                              onClick={() => handleSaveEdit(review.id)}
+                              mr={2}
+                            >
+                              저장
+                            </Button>
+                          ) : (
+                            <IconButton
+                              icon={<FaEdit />}
+                              colorScheme="blue"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditReview(review.id)}
+                              aria-label="Edit review"
+                              mr={2}
+                            />
+                          )}
                           <IconButton
-                            icon={<FaEdit />}
-                            colorScheme="blue"
+                            icon={<FaTrash />}
+                            colorScheme="red"
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEditReview(review.id)}
-                            aria-label="Edit review"
-                            mr={2}
+                            onClick={() => handleDeleteReview(review.id)}
+                            aria-label="Delete review"
                           />
-                        )}
-                        <IconButton
-                          icon={<FaTrash />}
-                          colorScheme="red"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteReview(review.id)}
-                          aria-label="Delete review"
-                        />
-                      </Flex>
-                    )}
-                  </Flex>
-                ))}
+                        </Flex>
+                      )}
+                    </Flex>
+                  ))}
+                </Box>
               </Box>
             )}
           </Box>
