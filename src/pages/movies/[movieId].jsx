@@ -24,6 +24,9 @@ import {
   collection,
   addDoc,
   getDocs,
+  deleteDoc,
+  doc,
+  updateDoc,
   query as firebaseQuery,
   orderBy,
   where,
@@ -86,13 +89,11 @@ export default function MovieDetail({ query }) {
 
   const fetchMovie = async () => {
     try {
-      // 영화 상세 정보 가져오기
       const detailRes = await fetch(
         `/api/movieDetails?movieId=${query.movieId}&language=ko-KR`
       )
       const movieData = await detailRes.json()
 
-      // 한국어 줄거리가 없으면 영어로 시도
       if (!movieData.overview) {
         const englishRes = await fetch(
           `/api/movieDetails?movieId=${query.movieId}&language=en-US`
@@ -101,13 +102,11 @@ export default function MovieDetail({ query }) {
         movieData.overview = englishData.overview
       }
 
-      // 한국어 비디오 검색
       let videoRes = await fetch(
         `/api/videos?movieId=${query.movieId}&language=ko-KR`
       )
       let videoData = await videoRes.json()
 
-      // 한국어 비디오가 없으면 영어로 검색
       if (!videoData.results || videoData.results.length === 0) {
         videoRes = await fetch(
           `/api/videos?movieId=${query.movieId}&language=en-US`
@@ -115,7 +114,6 @@ export default function MovieDetail({ query }) {
         videoData = await videoRes.json()
       }
 
-      // 비디오 키 설정
       if (videoData?.results?.length > 0) {
         const video =
           videoData.results.find(
@@ -167,13 +165,14 @@ export default function MovieDetail({ query }) {
     }
   }
 
-  const handleDeleteReview = (reviewId) => {
-    const updatedReviews = reviews.filter((review) => review.id !== reviewId)
-    setReviews(updatedReviews)
-    localStorage.setItem(
-      `reviews-${query.movieId}`,
-      JSON.stringify(updatedReviews)
-    )
+  const handleDeleteReview = async (reviewId) => {
+    try {
+      await deleteDoc(doc(db, 'reviews', reviewId))
+      console.log('Review deleted successfully')
+      fetchReviews() // 리뷰 목록 새로고침
+    } catch (error) {
+      console.error('Error deleting review:', error)
+    }
   }
 
   const handleEditReview = (reviewId) => {
@@ -182,17 +181,20 @@ export default function MovieDetail({ query }) {
     setEditReviewText(reviewToEdit.review)
   }
 
-  const handleSaveEdit = (reviewId) => {
-    const updatedReviews = reviews.map((review) =>
-      review.id === reviewId ? { ...review, review: editReviewText } : review
-    )
-    setReviews(updatedReviews)
-    localStorage.setItem(
-      `reviews-${query.movieId}`,
-      JSON.stringify(updatedReviews)
-    )
-    setEditingReviewId(null)
-    setEditReviewText('')
+  const handleSaveEdit = async (reviewId) => {
+    try {
+      const reviewRef = doc(db, 'reviews', reviewId)
+      await updateDoc(reviewRef, {
+        review: editReviewText,
+      })
+      console.log('Review updated successfully')
+
+      setEditingReviewId(null)
+      setEditReviewText('')
+      fetchReviews() // 리뷰 목록 새로고침
+    } catch (error) {
+      console.error('Error updating review:', error)
+    }
   }
 
   if (!isAuthenticated) {
@@ -352,7 +354,7 @@ export default function MovieDetail({ query }) {
           <Box mt={6} p={4} bg="white" borderRadius="md" width="100%">
             <Textarea
               value={userReview}
-              onChange={(e) => setUserReview(e.target.value)}
+              onChange={handleReviewChange}
               placeholder="리뷰 작성해 주세요..."
               size="sm"
               mb={2}
